@@ -1,0 +1,227 @@
+import * as THREE from 'three';
+import { BalanceConfig } from '../config/types';
+import { clamp } from '../utils/math';
+import { ROAD_WIDTH } from '../config/constants';
+import { InputManager } from '../core/InputManager';
+
+export type PenguinState = 'running' | 'jumping' | 'stumbling' | 'flying';
+
+export class Penguin {
+  readonly mesh: THREE.Group;
+  private body: THREE.Mesh;
+  private state: PenguinState = 'running';
+
+  speed = 30;
+  private maxSpeed = 60;
+  private acceleration = 8;
+  private deceleration = 12;
+  private lateralSpeed = 15;
+  private jumpForce = 12;
+  private gravity = 30;
+
+  private velocityY = 0;
+  private groundY = 0;
+  lives = 3;
+  invincible = false;
+  private invincibilityTimer = 0;
+  private invincibilityDuration = 2.0;
+  private stumbleTimer = 0;
+  private flyTimer = 0;
+  private flySpeedMultiplier = 1;
+  private waddleTime = 0;
+
+  constructor() {
+    this.mesh = new THREE.Group();
+
+    // Body (ellipsoid)
+    const bodyGeo = new THREE.SphereGeometry(0.5, 8, 8);
+    bodyGeo.scale(0.8, 1.2, 0.7);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e });
+    this.body = new THREE.Mesh(bodyGeo, bodyMat);
+    this.body.position.y = 0.8;
+    this.body.castShadow = true;
+    this.mesh.add(this.body);
+
+    // Belly (white)
+    const bellyGeo = new THREE.SphereGeometry(0.35, 8, 8);
+    bellyGeo.scale(0.7, 1.0, 0.5);
+    const bellyMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0 });
+    const belly = new THREE.Mesh(bellyGeo, bellyMat);
+    belly.position.set(0, 0.75, 0.2);
+    this.mesh.add(belly);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.set(0, 1.6, 0);
+    head.castShadow = true;
+    this.mesh.add(head);
+
+    // Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.06, 6, 6);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(-0.12, 1.65, 0.25);
+    this.mesh.add(leftEye);
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(0.12, 1.65, 0.25);
+    this.mesh.add(rightEye);
+
+    // Beak
+    const beakGeo = new THREE.ConeGeometry(0.08, 0.2, 4);
+    const beakMat = new THREE.MeshStandardMaterial({ color: 0xff8800 });
+    const beak = new THREE.Mesh(beakGeo, beakMat);
+    beak.position.set(0, 1.55, 0.35);
+    beak.rotation.x = Math.PI / 2;
+    this.mesh.add(beak);
+
+    // Feet
+    const footGeo = new THREE.BoxGeometry(0.2, 0.08, 0.3);
+    const footMat = new THREE.MeshStandardMaterial({ color: 0xff8800 });
+    const leftFoot = new THREE.Mesh(footGeo, footMat);
+    leftFoot.position.set(-0.2, 0.04, 0.1);
+    this.mesh.add(leftFoot);
+    const rightFoot = new THREE.Mesh(footGeo, footMat);
+    rightFoot.position.set(0.2, 0.04, 0.1);
+    this.mesh.add(rightFoot);
+  }
+
+  configure(config: BalanceConfig['penguin']): void {
+    this.speed = config.baseSpeed;
+    this.maxSpeed = config.maxSpeed;
+    this.acceleration = config.acceleration;
+    this.deceleration = config.deceleration;
+    this.lateralSpeed = config.lateralSpeed;
+    this.jumpForce = config.jumpForce;
+    this.gravity = config.gravity;
+    this.lives = config.lives;
+    this.invincibilityDuration = config.invincibilityDuration;
+  }
+
+  update(dt: number, input: InputManager, roadCurveX: number, roadElevation: number): void {
+    this.groundY = roadElevation;
+
+    // State timers
+    if (this.stumbleTimer > 0) {
+      this.stumbleTimer -= dt;
+      if (this.stumbleTimer <= 0) {
+        this.state = 'running';
+      }
+    }
+
+    if (this.flyTimer > 0) {
+      this.flyTimer -= dt;
+      if (this.flyTimer <= 0) {
+        this.state = 'running';
+        this.flySpeedMultiplier = 1;
+      }
+    }
+
+    if (this.invincible) {
+      this.invincibilityTimer -= dt;
+      if (this.invincibilityTimer <= 0) {
+        this.invincible = false;
+        this.mesh.visible = true;
+      } else {
+        // Blink effect
+        this.mesh.visible = Math.floor(this.invincibilityTimer * 10) % 2 === 0;
+      }
+    }
+
+    // Speed management
+    if (this.state !== 'stumbling') {
+      this.speed = Math.min(this.speed + this.acceleration * dt, this.maxSpeed);
+    }
+
+    // Lateral movement
+    if (this.state !== 'stumbling') {
+      let moveX = 0;
+      if (input.left) moveX += this.lateralSpeed;
+      if (input.right) moveX -= this.lateralSpeed;
+      this.mesh.position.x += moveX * dt;
+
+      // Smooth attraction toward road curve center
+      const roadCenter = roadCurveX;
+      this.mesh.position.x = clamp(
+        this.mesh.position.x,
+        roadCenter - ROAD_WIDTH / 2 + 0.5,
+        roadCenter + ROAD_WIDTH / 2 - 0.5
+      );
+    }
+
+    // Jump
+    if (input.jump && this.state === 'running') {
+      this.state = 'jumping';
+      this.velocityY = this.jumpForce;
+    }
+
+    // Vertical movement
+    if (this.state === 'jumping') {
+      this.velocityY -= this.gravity * dt;
+      this.mesh.position.y += this.velocityY * dt;
+      if (this.mesh.position.y <= this.groundY) {
+        this.mesh.position.y = this.groundY;
+        this.velocityY = 0;
+        this.state = 'running';
+      }
+    } else if (this.state === 'flying') {
+      this.mesh.position.y = this.groundY + 3;
+    } else {
+      this.mesh.position.y = this.groundY;
+    }
+
+    // Forward movement
+    const effectiveSpeed = this.speed * this.flySpeedMultiplier;
+    this.mesh.position.z -= effectiveSpeed * dt;
+
+    // Waddle animation
+    this.waddleTime += dt * effectiveSpeed * 0.3;
+    this.mesh.rotation.z = Math.sin(this.waddleTime) * 0.08;
+  }
+
+  stumble(speedPenalty: number, duration: number): void {
+    if (this.invincible || this.state === 'flying') return;
+
+    this.state = 'stumbling';
+    this.stumbleTimer = duration;
+    this.speed *= (1 - speedPenalty);
+    this.lives--;
+    this.invincible = true;
+    this.invincibilityTimer = this.invincibilityDuration;
+  }
+
+  activateFly(duration: number, speedMultiplier: number): void {
+    this.state = 'flying';
+    this.flyTimer = duration;
+    this.flySpeedMultiplier = speedMultiplier;
+  }
+
+  get position(): THREE.Vector3 {
+    return this.mesh.position;
+  }
+
+  get isJumping(): boolean {
+    return this.state === 'jumping';
+  }
+
+  get isFlying(): boolean {
+    return this.state === 'flying';
+  }
+
+  get currentState(): PenguinState {
+    return this.state;
+  }
+
+  reset(): void {
+    this.mesh.position.set(0, 0, 0);
+    this.speed = 30;
+    this.velocityY = 0;
+    this.state = 'running';
+    this.invincible = false;
+    this.mesh.visible = true;
+    this.stumbleTimer = 0;
+    this.flyTimer = 0;
+    this.flySpeedMultiplier = 1;
+  }
+}

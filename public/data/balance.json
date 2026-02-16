@@ -1,0 +1,45 @@
+{
+  "penguin": {
+    "baseSpeed": 30,
+    "maxSpeed": 60,
+    "acceleration": 8,
+    "deceleration": 12,
+    "lateralSpeed": 15,
+    "jumpForce": 12,
+    "gravity": 30,
+    "lives": 3,
+    "invincibilityDuration": 2.0
+  },
+  "obstacles": {
+    "iceHole": {
+      "speedPenalty": 0.5,
+      "stunDuration": 0.8,
+      "canJumpOver": true
+    },
+    "crevasse": {
+      "speedPenalty": 0.8,
+      "stunDuration": 2.0,
+      "timePenalty": 5
+    },
+    "seal": {
+      "speedPenalty": 0.6,
+      "stunDuration": 1.0,
+      "lateralDrift": 0.5
+    }
+  },
+  "items": {
+    "fish": { "score": 100 },
+    "flag": { "score": 500 },
+    "propeller": { "duration": 5.0, "speedMultiplier": 1.5 }
+  },
+  "camera": {
+    "offsetY": 5,
+    "offsetZ": 12,
+    "lookAheadZ": 20,
+    "smoothing": 0.05
+  },
+  "scoring": {
+    "stageBonus": 2000,
+    "timeBonusPerSec": 50
+  }
+}

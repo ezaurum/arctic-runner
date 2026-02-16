@@ -1,0 +1,125 @@
+{
+  "stages": [
+    {
+      "id": 1,
+      "name": "Base Alpha",
+      "distance": 3000,
+      "timeLimit": 120,
+      "roadCurve": [
+        { "at": 0, "curveX": 0 },
+        { "at": 500, "curveX": -8 },
+        { "at": 1000, "curveX": 5 },
+        { "at": 1500, "curveX": -3 },
+        { "at": 2000, "curveX": 7 },
+        { "at": 2500, "curveX": -5 },
+        { "at": 3000, "curveX": 0 }
+      ],
+      "roadElevation": [
+        { "at": 0, "y": 0 },
+        { "at": 600, "y": 4 },
+        { "at": 1200, "y": 1 },
+        { "at": 1800, "y": 6 },
+        { "at": 2400, "y": 2 },
+        { "at": 3000, "y": 0 }
+      ],
+      "obstacles": {
+        "iceHole": { "frequency": 0.05, "startAfter": 200 },
+        "crevasse": { "frequency": 0.02, "startAfter": 500 },
+        "seal": { "frequency": 0.03, "startAfter": 300 }
+      },
+      "collectibles": {
+        "fish": { "frequency": 0.15 },
+        "flag": { "frequency": 0.01, "startAfter": 1000 },
+        "propeller": { "frequency": 0.005, "startAfter": 1500 }
+      },
+      "environment": {
+        "fogNear": 100,
+        "fogFar": 400,
+        "snowIntensity": 0
+      }
+    },
+    {
+      "id": 2,
+      "name": "Glacier Pass",
+      "distance": 4000,
+      "timeLimit": 140,
+      "roadCurve": [
+        { "at": 0, "curveX": 0 },
+        { "at": 400, "curveX": -10 },
+        { "at": 800, "curveX": 8 },
+        { "at": 1200, "curveX": -12 },
+        { "at": 1600, "curveX": 6 },
+        { "at": 2000, "curveX": -8 },
+        { "at": 2800, "curveX": 10 },
+        { "at": 3500, "curveX": -5 },
+        { "at": 4000, "curveX": 0 }
+      ],
+      "roadElevation": [
+        { "at": 0, "y": 0 },
+        { "at": 500, "y": 6 },
+        { "at": 1000, "y": 2 },
+        { "at": 1500, "y": 8 },
+        { "at": 2500, "y": 3 },
+        { "at": 3500, "y": 7 },
+        { "at": 4000, "y": 0 }
+      ],
+      "obstacles": {
+        "iceHole": { "frequency": 0.07, "startAfter": 100 },
+        "crevasse": { "frequency": 0.04, "startAfter": 300 },
+        "seal": { "frequency": 0.05, "startAfter": 200 }
+      },
+      "collectibles": {
+        "fish": { "frequency": 0.12 },
+        "flag": { "frequency": 0.015, "startAfter": 800 },
+        "propeller": { "frequency": 0.008, "startAfter": 1000 }
+      },
+      "environment": {
+        "fogNear": 80,
+        "fogFar": 350,
+        "snowIntensity": 0.5
+      }
+    },
+    {
+      "id": 3,
+      "name": "Blizzard Peak",
+      "distance": 5000,
+      "timeLimit": 160,
+      "roadCurve": [
+        { "at": 0, "curveX": 0 },
+        { "at": 300, "curveX": -15 },
+        { "at": 700, "curveX": 12 },
+        { "at": 1100, "curveX": -10 },
+        { "at": 1500, "curveX": 15 },
+        { "at": 2000, "curveX": -12 },
+        { "at": 2500, "curveX": 8 },
+        { "at": 3200, "curveX": -15 },
+        { "at": 4000, "curveX": 10 },
+        { "at": 5000, "curveX": 0 }
+      ],
+      "roadElevation": [
+        { "at": 0, "y": 0 },
+        { "at": 500, "y": 8 },
+        { "at": 1000, "y": 3 },
+        { "at": 2000, "y": 12 },
+        { "at": 3000, "y": 5 },
+        { "at": 4000, "y": 10 },
+        { "at": 5000, "y": 0 }
+      ],
+      "obstacles": {
+        "iceHole": { "frequency": 0.1, "startAfter": 50 },
+        "crevasse": { "frequency": 0.06, "startAfter": 200 },
+        "seal": { "frequency": 0.07, "startAfter": 100 }
+      },
+      "collectibles": {
+        "fish": { "frequency": 0.1 },
+        "flag": { "frequency": 0.02, "startAfter": 500 },
+        "propeller": { "frequency": 0.01, "startAfter": 800 }
+      },
+      "environment": {
+        "fogNear": 50,
+        "fogFar": 250,
+        "snowIntensity": 1.0
+      }
+    }
+  ]
+}
