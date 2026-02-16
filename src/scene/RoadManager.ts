@@ -8,11 +8,24 @@ interface Segment {
   road: THREE.Mesh;
   groundLeft: THREE.Mesh;
   groundRight: THREE.Mesh;
+  props: THREE.Mesh[];
   /** World-space Z of the segment's back edge (more negative = further ahead) */
   backZ: number;
 }
 
 const GROUND_SIDE_WIDTH = 30;
+
+// Shared prop geometries
+const PROP_GEOS = {
+  iceRock: new THREE.DodecahedronGeometry(0.6, 0),
+  tallRock: new THREE.ConeGeometry(0.4, 1.5, 5),
+  pole: new THREE.CylinderGeometry(0.05, 0.05, 1.8, 4),
+};
+const PROP_MATS = {
+  ice: new THREE.MeshStandardMaterial({ color: 0xc0dde8, roughness: 0.4 }),
+  rock: new THREE.MeshStandardMaterial({ color: 0x8899aa, roughness: 0.7 }),
+  pole: new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.5 }),
+};
 
 export class RoadManager {
   private segments: Segment[] = [];
@@ -56,7 +69,30 @@ export class RoadManager {
       groundRight.receiveShadow = true;
       this.scene.add(groundRight);
 
-      this.segments.push({ road, groundLeft, groundRight, backZ: 0 });
+      // Roadside props (2-4 per segment)
+      const props: THREE.Mesh[] = [];
+      const propCount = 2 + Math.floor(Math.random() * 3);
+      for (let p = 0; p < propCount; p++) {
+        const type = Math.random();
+        let mesh: THREE.Mesh;
+        if (type < 0.5) {
+          mesh = new THREE.Mesh(PROP_GEOS.iceRock, PROP_MATS.ice);
+          const s = 0.5 + Math.random() * 1.0;
+          mesh.scale.set(s, s * (0.5 + Math.random() * 0.5), s);
+        } else if (type < 0.8) {
+          mesh = new THREE.Mesh(PROP_GEOS.tallRock, PROP_MATS.rock);
+          const s = 0.6 + Math.random() * 0.8;
+          mesh.scale.set(s, s, s);
+        } else {
+          mesh = new THREE.Mesh(PROP_GEOS.pole, PROP_MATS.pole);
+        }
+        mesh.castShadow = true;
+        mesh.rotation.y = Math.random() * Math.PI * 2;
+        this.scene.add(mesh);
+        props.push(mesh);
+      }
+
+      this.segments.push({ road, groundLeft, groundRight, props, backZ: 0 });
     }
   }
 
@@ -120,6 +156,23 @@ export class RoadManager {
       backCY - midY, frontCY - midY,
       0
     );
+
+    // --- Roadside props ---
+    for (let p = 0; p < seg.props.length; p++) {
+      const prop = seg.props[p];
+      const t = (p + 0.5) / seg.props.length; // spread along segment length
+      const propZ = backZ + t * ROAD_SEGMENT_LENGTH;
+      const propDist = Math.abs(propZ);
+      const propCX = this.getCurveXAt(propDist);
+      const propCY = this.getElevationAt(propDist);
+      const side = p % 2 === 0 ? -1 : 1;
+      const offset = ROAD_WIDTH / 2 + 1.5 + Math.random() * 6;
+      prop.position.set(
+        propCX + side * offset,
+        propCY + prop.scale.y * 0.3,
+        propZ
+      );
+    }
   }
 
   /**
