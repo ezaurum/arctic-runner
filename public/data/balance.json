@@ -1,12 +1,12 @@
 {
   "penguin": {
-    "baseSpeed": 30,
-    "maxSpeed": 60,
-    "acceleration": 8,
+    "baseSpeed": 18,
+    "maxSpeed": 40,
+    "acceleration": 4,
     "deceleration": 12,
     "lateralSpeed": 15,
-    "jumpForce": 12,
-    "gravity": 30,
+    "jumpForce": 7,
+    "gravity": 35,
     "lives": 3,
     "invincibilityDuration": 2.0
   },
@@ -33,10 +33,10 @@
     "propeller": { "duration": 5.0, "speedMultiplier": 1.5 }
   },
   "camera": {
-    "offsetY": 5,
-    "offsetZ": 12,
-    "lookAheadZ": 20,
-    "smoothing": 0.05
+    "offsetY": 4,
+    "offsetZ": 7,
+    "lookAheadZ": 15,
+    "smoothing": 0.15
   },
   "scoring": {
     "stageBonus": 2000,

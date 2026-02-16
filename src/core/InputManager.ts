@@ -30,12 +30,22 @@ export class InputManager {
     return this.isDown('ArrowRight') || this.isDown('KeyD');
   }
 
+  get up(): boolean {
+    return this.isDown('ArrowUp') || this.isDown('KeyW');
+  }
+
   get jump(): boolean {
-    return this.wasPressed('Space') || this.wasPressed('ArrowUp') || this.wasPressed('KeyW');
+    return this.wasPressed('Space');
   }
 
   get enter(): boolean {
-    return this.wasPressed('Enter') || this.wasPressed('Space');
+    return this.wasPressed('Enter');
+  }
+
+  /** Clear all buffered input — call on state transitions */
+  flush(): void {
+    this.justPressed.clear();
+    this.keys.clear();
   }
 
   endFrame(): void {

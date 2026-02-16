@@ -1,7 +1,6 @@
 import { SceneManager } from './scene/SceneManager';
 import { CameraController } from './scene/CameraController';
 import { RoadManager } from './scene/RoadManager';
-import { GroundManager } from './scene/GroundManager';
 import { SkyManager } from './scene/SkyManager';
 import { Penguin } from './entities/Penguin';
 import { ObstacleFactory } from './entities/ObstacleFactory';
@@ -13,6 +12,7 @@ import { StageSystem } from './systems/StageSystem';
 import { InputManager } from './core/InputManager';
 import { AssetLoader } from './core/AssetLoader';
 import { EventBus } from './core/EventBus';
+import { SoundManager } from './core/SoundManager';
 import { HUD } from './ui/HUD';
 import { TitleScreen } from './ui/TitleScreen';
 import { StageIntro } from './ui/StageIntro';
@@ -23,7 +23,6 @@ export class Game {
   private sceneManager: SceneManager;
   private cameraController: CameraController;
   private roadManager: RoadManager;
-  private groundManager: GroundManager;
   private skyManager: SkyManager;
   private penguin: Penguin;
   private obstacleFactory: ObstacleFactory;
@@ -34,6 +33,7 @@ export class Game {
   private stageSystem: StageSystem;
   private input: InputManager;
   private eventBus: EventBus;
+  private sound: SoundManager;
 
   private hud: HUD;
   private titleScreen: TitleScreen;
@@ -50,11 +50,11 @@ export class Game {
 
     this.eventBus = new EventBus();
     this.input = new InputManager();
+    this.sound = new SoundManager();
     this.sceneManager = new SceneManager(container);
     this.cameraController = new CameraController(this.sceneManager.camera);
 
     this.roadManager = new RoadManager(this.sceneManager.scene, this.eventBus);
-    this.groundManager = new GroundManager(this.sceneManager.scene);
     this.skyManager = new SkyManager(this.sceneManager.scene);
 
     this.penguin = new Penguin();
@@ -89,6 +89,10 @@ export class Game {
     this.scoreSystem.configure(this.balance);
     this.stageSystem.configure(this.stages);
 
+    // Wire up sound effects
+    this.eventBus.on('obstacleHit', () => this.sound.playHit());
+    this.eventBus.on('collectItem', () => this.sound.playCollect());
+
     this.setState('TITLE');
     this.lastTime = performance.now();
     requestAnimationFrame((t) => this.loop(t));
@@ -96,6 +100,7 @@ export class Game {
 
   private setState(newState: GameState): void {
     this.state = newState;
+    this.input.flush();
 
     this.hud.hide();
     this.titleScreen.hide();
@@ -122,6 +127,7 @@ export class Game {
         break;
 
       case 'STAGE_COMPLETE': {
+        this.sound.playStageClear();
         const remaining = this.stageSystem.remainingTime;
         this.scoreSystem.addStageBonus(remaining);
 
@@ -142,6 +148,7 @@ export class Game {
       }
 
       case 'GAME_OVER':
+        this.sound.playGameOver();
         this.gameOverScreen.show(
           this.scoreSystem.score,
           this.stageSystem.stageIndex + 1,
@@ -167,7 +174,6 @@ export class Game {
     this.spawnSystem.configureStage(stage);
     this.spawnSystem.reset();
     this.roadManager.reset();
-    this.groundManager.reset();
     this.penguin.reset();
     this.penguin.configure(this.balance.penguin);
     this.sceneManager.setFog(stage.environment.fogNear, stage.environment.fogFar);
@@ -217,8 +223,8 @@ export class Game {
 
     this.penguin.update(dt, this.input, roadCurveX, roadElevation);
     this.roadManager.update(this.penguin.position.z);
-    this.groundManager.update(this.penguin.position.z);
     this.cameraController.update(this.penguin.position, dt);
+    this.sceneManager.updateLightPosition(this.penguin.position);
     this.skyManager.update(this.penguin.position.z, dt);
     this.collisionSystem.update();
     this.collectibleFactory.updateAll(dt);

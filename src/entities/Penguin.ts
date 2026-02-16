@@ -9,6 +9,8 @@ export type PenguinState = 'running' | 'jumping' | 'stumbling' | 'flying';
 export class Penguin {
   readonly mesh: THREE.Group;
   private body: THREE.Mesh;
+  private leftFoot!: THREE.Mesh;
+  private rightFoot!: THREE.Mesh;
   private state: PenguinState = 'running';
 
   speed = 30;
@@ -29,6 +31,7 @@ export class Penguin {
   private flyTimer = 0;
   private flySpeedMultiplier = 1;
   private waddleTime = 0;
+  private knockbackX = 0;
 
   constructor() {
     this.mesh = new THREE.Group();
@@ -79,12 +82,15 @@ export class Penguin {
     // Feet
     const footGeo = new THREE.BoxGeometry(0.2, 0.08, 0.3);
     const footMat = new THREE.MeshStandardMaterial({ color: 0xff8800 });
-    const leftFoot = new THREE.Mesh(footGeo, footMat);
-    leftFoot.position.set(-0.2, 0.04, 0.1);
-    this.mesh.add(leftFoot);
-    const rightFoot = new THREE.Mesh(footGeo, footMat);
-    rightFoot.position.set(0.2, 0.04, 0.1);
-    this.mesh.add(rightFoot);
+    this.leftFoot = new THREE.Mesh(footGeo, footMat);
+    this.leftFoot.position.set(-0.2, 0.04, 0.1);
+    this.mesh.add(this.leftFoot);
+    this.rightFoot = new THREE.Mesh(footGeo, footMat);
+    this.rightFoot.position.set(0.2, 0.04, 0.1);
+    this.mesh.add(this.rightFoot);
+
+    // Face -Z direction (forward movement direction)
+    this.mesh.rotation.y = Math.PI;
   }
 
   configure(config: BalanceConfig['penguin']): void {
@@ -135,20 +141,24 @@ export class Penguin {
     }
 
     // Lateral movement
-    if (this.state !== 'stumbling') {
+    if (this.state === 'stumbling') {
+      // Apply knockback that decays
+      this.mesh.position.x += this.knockbackX * dt;
+      this.knockbackX *= Math.pow(0.05, dt); // rapid decay
+    } else {
       let moveX = 0;
-      if (input.left) moveX += this.lateralSpeed;
-      if (input.right) moveX -= this.lateralSpeed;
+      if (input.left) moveX -= this.lateralSpeed;
+      if (input.right) moveX += this.lateralSpeed;
       this.mesh.position.x += moveX * dt;
-
-      // Smooth attraction toward road curve center
-      const roadCenter = roadCurveX;
-      this.mesh.position.x = clamp(
-        this.mesh.position.x,
-        roadCenter - ROAD_WIDTH / 2 + 0.5,
-        roadCenter + ROAD_WIDTH / 2 - 0.5
-      );
     }
+
+    // Always clamp to road bounds
+    const roadCenter = roadCurveX;
+    this.mesh.position.x = clamp(
+      this.mesh.position.x,
+      roadCenter - ROAD_WIDTH / 2 + 0.5,
+      roadCenter + ROAD_WIDTH / 2 - 0.5
+    );
 
     // Jump
     if (input.jump && this.state === 'running') {
@@ -175,12 +185,20 @@ export class Penguin {
     const effectiveSpeed = this.speed * this.flySpeedMultiplier;
     this.mesh.position.z -= effectiveSpeed * dt;
 
-    // Waddle animation
+    // Waddle + foot animation
     this.waddleTime += dt * effectiveSpeed * 0.3;
     this.mesh.rotation.z = Math.sin(this.waddleTime) * 0.08;
+
+    // Feet stride: alternate forward/back
+    const stride = Math.sin(this.waddleTime) * 0.25;
+    this.leftFoot.position.z = 0.1 + stride;
+    this.rightFoot.position.z = 0.1 - stride;
+    // Slight lift on the forward foot
+    this.leftFoot.position.y = 0.04 + Math.max(0, stride) * 0.15;
+    this.rightFoot.position.y = 0.04 + Math.max(0, -stride) * 0.15;
   }
 
-  stumble(speedPenalty: number, duration: number): void {
+  stumble(speedPenalty: number, duration: number, obstacleX?: number): void {
     if (this.invincible || this.state === 'flying') return;
 
     this.state = 'stumbling';
@@ -189,6 +207,14 @@ export class Penguin {
     this.lives--;
     this.invincible = true;
     this.invincibilityTimer = this.invincibilityDuration;
+
+    // Lateral knockback: push away from obstacle center
+    if (obstacleX !== undefined) {
+      const dir = this.mesh.position.x - obstacleX;
+      this.knockbackX = (dir >= 0 ? 1 : -1) * 8;
+    } else {
+      this.knockbackX = (Math.random() > 0.5 ? 1 : -1) * 8;
+    }
   }
 
   activateFly(duration: number, speedMultiplier: number): void {

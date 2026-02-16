@@ -49,7 +49,7 @@ export class ObstacleFactory {
   recycleFarBehind(playerZ: number): void {
     for (let i = this.activeObstacles.length - 1; i >= 0; i--) {
       const obs = this.activeObstacles[i];
-      if (obs.mesh.position.z > playerZ + 20) {
+      if (obs.mesh.position.z > playerZ + 60) {
         this.recycle(obs);
       }
     }

@@ -50,7 +50,7 @@ export class CollisionSystem {
         Math.abs(pp.z - op.z) < penguinHalfD + obs.halfDepth
       ) {
         if (obsBalance) {
-          this.penguin.stumble(obsBalance.speedPenalty, obsBalance.stunDuration);
+          this.penguin.stumble(obsBalance.speedPenalty, obsBalance.stunDuration, op.x);
           this.eventBus.emit('obstacleHit', obs.type, obsBalance);
         }
         this.obstacleFactory.recycle(obs);

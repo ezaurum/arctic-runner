@@ -19,7 +19,7 @@ export class SpawnSystem {
     this.obstacleFactory = obstacleFactory;
     this.collectibleFactory = collectibleFactory;
 
-    eventBus.on('segmentRecycled', (data: { z: number; x: number; distance: number }) => {
+    eventBus.on('segmentRecycled', (data: { z: number; x: number; y: number; distance: number }) => {
       this.onSegmentRecycled(data);
     });
   }
@@ -28,17 +28,17 @@ export class SpawnSystem {
     this.stage = stage;
   }
 
-  private onSegmentRecycled(data: { z: number; x: number; distance: number }): void {
+  private onSegmentRecycled(data: { z: number; x: number; y: number; distance: number }): void {
     if (!this.stage) return;
 
-    const { z, x, distance } = data;
+    const { z, x, y, distance } = data;
 
     // Spawn obstacles
     for (const [type, config] of Object.entries(this.stage.obstacles)) {
       if (config.startAfter && distance < config.startAfter) continue;
       if (Math.random() < config.frequency) {
         const offsetX = (Math.random() - 0.5) * (ROAD_WIDTH - 2);
-        this.obstacleFactory.spawn(type as ObstacleType, x + offsetX, 0, z);
+        this.obstacleFactory.spawn(type as ObstacleType, x + offsetX, y, z);
       }
     }
 
@@ -47,7 +47,7 @@ export class SpawnSystem {
       if (config.startAfter && distance < config.startAfter) continue;
       if (Math.random() < config.frequency) {
         const offsetX = (Math.random() - 0.5) * (ROAD_WIDTH - 2);
-        this.collectibleFactory.spawn(type as CollectibleType, x + offsetX, 0, z);
+        this.collectibleFactory.spawn(type as CollectibleType, x + offsetX, y, z);
       }
     }
   }

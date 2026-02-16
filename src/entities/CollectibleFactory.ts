@@ -49,7 +49,7 @@ export class CollectibleFactory {
   recycleFarBehind(playerZ: number): void {
     for (let i = this.activeCollectibles.length - 1; i >= 0; i--) {
       const col = this.activeCollectibles[i];
-      if (col.mesh.position.z > playerZ + 20) {
+      if (col.mesh.position.z > playerZ + 60) {
         this.recycle(col);
       }
     }

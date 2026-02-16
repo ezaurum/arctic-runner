@@ -4,6 +4,7 @@ export class SceneManager {
   readonly scene: THREE.Scene;
   readonly camera: THREE.PerspectiveCamera;
   readonly renderer: THREE.WebGLRenderer;
+  private dirLight: THREE.DirectionalLight;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -27,18 +28,29 @@ export class SceneManager {
     const ambientLight = new THREE.AmbientLight(0x8899bb, 0.8);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(10, 20, 10);
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.left = -30;
-    dirLight.shadow.camera.right = 30;
-    dirLight.shadow.camera.top = 30;
-    dirLight.shadow.camera.bottom = -30;
-    dirLight.shadow.camera.far = 80;
-    dirLight.shadow.mapSize.set(1024, 1024);
-    this.scene.add(dirLight);
+    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    this.dirLight.position.set(10, 20, 10);
+    this.dirLight.castShadow = true;
+    this.dirLight.shadow.camera.left = -30;
+    this.dirLight.shadow.camera.right = 30;
+    this.dirLight.shadow.camera.top = 30;
+    this.dirLight.shadow.camera.bottom = -30;
+    this.dirLight.shadow.camera.far = 80;
+    this.dirLight.shadow.mapSize.set(1024, 1024);
+    this.scene.add(this.dirLight);
+    this.scene.add(this.dirLight.target);
 
     window.addEventListener('resize', () => this.onResize());
+  }
+
+  /** Move directional light + shadow to follow the player */
+  updateLightPosition(playerPos: THREE.Vector3): void {
+    this.dirLight.position.set(
+      playerPos.x + 10,
+      playerPos.y + 20,
+      playerPos.z + 10
+    );
+    this.dirLight.target.position.copy(playerPos);
   }
 
   setFog(near: number, far: number): void {

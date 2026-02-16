@@ -3,42 +3,45 @@ import * as THREE from 'three';
 export class SkyManager {
   private particles: THREE.Points | null = null;
   private scene: THREE.Scene;
+  /** Group that follows the player so sky/mountains never fall behind */
+  private envGroup: THREE.Group;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.envGroup = new THREE.Group();
+    this.scene.add(this.envGroup);
     this.createBackground();
   }
 
   private createBackground(): void {
-    // Sky gradient via large sphere
     const skyGeo = new THREE.SphereGeometry(500, 16, 16);
     const skyMat = new THREE.MeshBasicMaterial({
       color: 0x87ceeb,
       side: THREE.BackSide,
     });
     const sky = new THREE.Mesh(skyGeo, skyMat);
-    this.scene.add(sky);
+    this.envGroup.add(sky);
 
-    // Mountain silhouettes
     this.createMountains();
   }
 
   private createMountains(): void {
     const mountainMat = new THREE.MeshBasicMaterial({ color: 0x6688aa });
 
-    for (let i = 0; i < 8; i++) {
-      const w = 30 + Math.random() * 40;
-      const h = 15 + Math.random() * 25;
-      const geo = new THREE.ConeGeometry(w, h, 4);
-      const mountain = new THREE.Mesh(geo, mountainMat);
-      const angle = (i / 8) * Math.PI * 2;
-      mountain.position.set(
-        Math.sin(angle) * 300,
-        h / 2 - 5,
-        Math.cos(angle) * 300
-      );
-      mountain.rotation.y = Math.random() * Math.PI;
-      this.scene.add(mountain);
+    // Place mountains only on left and right sides, avoiding the road (Z axis)
+    const sides = [-1, 1]; // left, right
+    for (const side of sides) {
+      for (let i = 0; i < 8; i++) {
+        const w = 30 + Math.random() * 40;
+        const h = 15 + Math.random() * 25;
+        const geo = new THREE.ConeGeometry(w, h, 4);
+        const mountain = new THREE.Mesh(geo, mountainMat);
+        const x = side * (150 + Math.random() * 200);
+        const z = (Math.random() - 0.5) * 600;
+        mountain.position.set(x, h / 2 - 5, z);
+        mountain.rotation.y = Math.random() * Math.PI;
+        this.envGroup.add(mountain);
+      }
     }
   }
 
@@ -69,6 +72,9 @@ export class SkyManager {
   }
 
   update(playerZ: number, dt: number): void {
+    // Keep sky/mountains centered on player
+    this.envGroup.position.z = playerZ;
+
     if (!this.particles) return;
 
     this.particles.position.z = playerZ;
