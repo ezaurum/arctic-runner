@@ -41,9 +41,11 @@ export class Game {
   private gameOverScreen: GameOverScreen;
 
   private state: GameState = 'TITLE';
+  private stateBeforePause: GameState = 'TITLE';
   private stages: StageConfig[] = [];
   private balance!: BalanceConfig;
   private lastTime = 0;
+  private pauseOverlay: HTMLElement;
 
   constructor(container: HTMLElement) {
     const uiOverlay = container.querySelector('#ui-overlay') as HTMLElement;
@@ -76,6 +78,31 @@ export class Game {
     this.titleScreen = new TitleScreen(uiOverlay);
     this.stageIntro = new StageIntro(uiOverlay);
     this.gameOverScreen = new GameOverScreen(uiOverlay);
+
+    // Pause overlay
+    this.pauseOverlay = document.createElement('div');
+    this.pauseOverlay.style.cssText = `
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      display:none;flex-direction:column;justify-content:center;align-items:center;
+      background:rgba(0,5,15,0.7);
+    `;
+    this.pauseOverlay.innerHTML = `
+      <div style="color:#aaeeff;font-size:36px;font-weight:bold;text-shadow:0 0 15px #4af;margin-bottom:20px">PAUSED</div>
+      <div style="color:#88bbcc;font-size:16px">Press ENTER to Resume</div>
+    `;
+    uiOverlay.appendChild(this.pauseOverlay);
+
+    // Auto-pause on focus loss
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && (this.state === 'PLAYING' || this.state === 'STAGE_INTRO')) {
+        this.pause();
+      }
+    });
+    window.addEventListener('blur', () => {
+      if (this.state === 'PLAYING' || this.state === 'STAGE_INTRO') {
+        this.pause();
+      }
+    });
   }
 
   async init(): Promise<void> {
@@ -106,6 +133,7 @@ export class Game {
     this.titleScreen.hide();
     this.stageIntro.hide();
     this.gameOverScreen.hide();
+    this.pauseOverlay.style.display = 'none';
 
     switch (newState) {
       case 'TITLE':
@@ -157,6 +185,21 @@ export class Game {
         );
         break;
     }
+  }
+
+  private pause(): void {
+    if (this.state === 'PAUSED') return;
+    this.stateBeforePause = this.state;
+    this.state = 'PAUSED';
+    this.input.flush();
+    this.pauseOverlay.style.display = 'flex';
+  }
+
+  private resume(): void {
+    this.state = this.stateBeforePause;
+    this.input.flush();
+    this.lastTime = performance.now();
+    this.pauseOverlay.style.display = 'none';
   }
 
   private startGame(): void {
@@ -211,6 +254,12 @@ export class Game {
         this.updatePlaying(dt);
         break;
 
+      case 'PAUSED':
+        if (this.input.enter) {
+          this.resume();
+        }
+        break;
+
       case 'GAME_OVER':
         this.gameOverScreen.handleInput(this.input.enter);
         break;
@@ -238,16 +287,14 @@ export class Game {
     this.hud.updateScore(this.scoreSystem.score);
     this.hud.updateTimer(this.stageSystem.remainingTime);
     this.hud.updateSpeed(this.penguin.speed);
-    this.hud.updateLives(this.penguin.lives);
     this.hud.updateProgress(this.stageSystem.progress);
 
     // Check game state transitions
-    if (this.penguin.lives <= 0) {
+    if (this.penguin.dead) {
       this.setState('GAME_OVER');
     } else if (stageResult === 'complete') {
       this.setState('STAGE_COMPLETE');
     } else if (stageResult === 'timeUp') {
-      this.penguin.lives = 0;
       this.setState('GAME_OVER');
     }
   }

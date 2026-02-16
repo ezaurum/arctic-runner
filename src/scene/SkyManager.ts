@@ -22,7 +22,17 @@ export class SkyManager {
     const sky = new THREE.Mesh(skyGeo, skyMat);
     this.envGroup.add(sky);
 
+    this.createGround();
     this.createMountains();
+  }
+
+  private createGround(): void {
+    const groundGeo = new THREE.PlaneGeometry(1200, 1200);
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0xe8eef4 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.5;
+    this.envGroup.add(ground);
   }
 
   private createMountains(): void {
@@ -38,7 +48,7 @@ export class SkyManager {
         const mountain = new THREE.Mesh(geo, mountainMat);
         const x = side * (150 + Math.random() * 200);
         const z = (Math.random() - 0.5) * 600;
-        mountain.position.set(x, h / 2 - 5, z);
+        mountain.position.set(x, h / 2 - 10, z);
         mountain.rotation.y = Math.random() * Math.PI;
         this.envGroup.add(mountain);
       }

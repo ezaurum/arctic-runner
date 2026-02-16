@@ -28,8 +28,6 @@ export interface BalanceConfig {
     lateralSpeed: number;
     jumpForce: number;
     gravity: number;
-    lives: number;
-    invincibilityDuration: number;
   };
   obstacles: Record<string, ObstacleBalance>;
   items: Record<string, ItemBalance>;
@@ -51,6 +49,7 @@ export interface ObstacleBalance {
   canJumpOver?: boolean;
   timePenalty?: number;
   lateralDrift?: number;
+  hitBehavior?: 'slide' | 'trap' | 'kill';
 }
 
 export interface ItemBalance {
@@ -59,4 +58,4 @@ export interface ItemBalance {
   speedMultiplier?: number;
 }
 
-export type GameState = 'TITLE' | 'STAGE_INTRO' | 'PLAYING' | 'STAGE_COMPLETE' | 'GAME_OVER';
+export type GameState = 'TITLE' | 'STAGE_INTRO' | 'PLAYING' | 'PAUSED' | 'STAGE_COMPLETE' | 'GAME_OVER';

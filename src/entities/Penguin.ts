@@ -4,7 +4,7 @@ import { clamp } from '../utils/math';
 import { ROAD_WIDTH } from '../config/constants';
 import { InputManager } from '../core/InputManager';
 
-export type PenguinState = 'running' | 'jumping' | 'stumbling' | 'flying';
+export type PenguinState = 'running' | 'jumping' | 'stumbling' | 'flying' | 'sliding' | 'trapped' | 'dead';
 
 export class Penguin {
   readonly mesh: THREE.Group;
@@ -23,11 +23,9 @@ export class Penguin {
 
   private velocityY = 0;
   private groundY = 0;
-  lives = 3;
-  invincible = false;
-  private invincibilityTimer = 0;
-  private invincibilityDuration = 2.0;
+  dead = false;
   private stumbleTimer = 0;
+  private slideTimer = 0;
   private flyTimer = 0;
   private flySpeedMultiplier = 1;
   private waddleTime = 0;
@@ -101,12 +99,44 @@ export class Penguin {
     this.lateralSpeed = config.lateralSpeed;
     this.jumpForce = config.jumpForce;
     this.gravity = config.gravity;
-    this.lives = config.lives;
-    this.invincibilityDuration = config.invincibilityDuration;
   }
 
   update(dt: number, input: InputManager, roadCurveX: number, roadElevation: number): void {
     this.groundY = roadElevation;
+
+    // Dead state: do nothing
+    if (this.state === 'dead') return;
+
+    // Trapped state: wait for jump input to escape
+    if (this.state === 'trapped') {
+      this.mesh.position.y = this.groundY - 0.8;
+      if (input.jump) {
+        this.state = 'jumping';
+        this.velocityY = this.jumpForce;
+        this.mesh.position.y = this.groundY;
+      }
+      return;
+    }
+
+    // Sliding state: knockback + timer, no forward movement
+    if (this.state === 'sliding') {
+      this.slideTimer -= dt;
+      this.mesh.position.x += this.knockbackX * dt;
+      this.knockbackX *= Math.pow(0.05, dt);
+      this.mesh.position.y = this.groundY;
+
+      const roadCenter = roadCurveX;
+      this.mesh.position.x = clamp(
+        this.mesh.position.x,
+        roadCenter - ROAD_WIDTH / 2 + 0.5,
+        roadCenter + ROAD_WIDTH / 2 - 0.5
+      );
+
+      if (this.slideTimer <= 0) {
+        this.state = 'running';
+      }
+      return;
+    }
 
     // State timers
     if (this.stumbleTimer > 0) {
@@ -121,17 +151,6 @@ export class Penguin {
       if (this.flyTimer <= 0) {
         this.state = 'running';
         this.flySpeedMultiplier = 1;
-      }
-    }
-
-    if (this.invincible) {
-      this.invincibilityTimer -= dt;
-      if (this.invincibilityTimer <= 0) {
-        this.invincible = false;
-        this.mesh.visible = true;
-      } else {
-        // Blink effect
-        this.mesh.visible = Math.floor(this.invincibilityTimer * 10) % 2 === 0;
       }
     }
 
@@ -199,14 +218,11 @@ export class Penguin {
   }
 
   stumble(speedPenalty: number, duration: number, obstacleX?: number): void {
-    if (this.invincible || this.state === 'flying') return;
+    if (this.state === 'flying') return;
 
     this.state = 'stumbling';
     this.stumbleTimer = duration;
     this.speed *= (1 - speedPenalty);
-    this.lives--;
-    this.invincible = true;
-    this.invincibilityTimer = this.invincibilityDuration;
 
     // Lateral knockback: push away from obstacle center
     if (obstacleX !== undefined) {
@@ -215,6 +231,29 @@ export class Penguin {
     } else {
       this.knockbackX = (Math.random() > 0.5 ? 1 : -1) * 8;
     }
+  }
+
+  slide(obstacleX: number): void {
+    if (this.state === 'flying') return;
+
+    this.state = 'sliding';
+    this.slideTimer = 0.6;
+
+    // Push away from obstacle
+    const dir = this.mesh.position.x - obstacleX;
+    this.knockbackX = (dir >= 0 ? 1 : -1) * 12;
+  }
+
+  trap(): void {
+    if (this.state === 'flying') return;
+
+    this.state = 'trapped';
+    this.speed = 0;
+  }
+
+  kill(): void {
+    this.state = 'dead';
+    this.dead = true;
   }
 
   activateFly(duration: number, speedMultiplier: number): void {
@@ -244,9 +283,10 @@ export class Penguin {
     this.speed = 30;
     this.velocityY = 0;
     this.state = 'running';
-    this.invincible = false;
+    this.dead = false;
     this.mesh.visible = true;
     this.stumbleTimer = 0;
+    this.slideTimer = 0;
     this.flyTimer = 0;
     this.flySpeedMultiplier = 1;
   }

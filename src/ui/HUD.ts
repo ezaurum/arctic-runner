@@ -5,7 +5,6 @@ export class HUD {
   private scoreEl!: HTMLElement;
   private timerEl!: HTMLElement;
   private speedEl!: HTMLElement;
-  private livesEl!: HTMLElement;
   private progressEl!: HTMLElement;
   private stageEl!: HTMLElement;
 
@@ -31,7 +30,6 @@ export class HUD {
         </div>
       </div>
       <div style="text-align:right">
-        <div id="hud-lives">❤❤❤</div>
         <div id="hud-speed" style="font-size:14px;opacity:0.8">30 km/h</div>
       </div>
     `;
@@ -40,7 +38,7 @@ export class HUD {
     this.scoreEl = this.el.querySelector('#hud-score')!;
     this.timerEl = this.el.querySelector('#hud-timer')!;
     this.speedEl = this.el.querySelector('#hud-speed')!;
-    this.livesEl = this.el.querySelector('#hud-lives')!;
+
     this.progressEl = this.el.querySelector('#hud-progress')!;
     this.stageEl = this.el.querySelector('#hud-stage')!;
   }
@@ -57,10 +55,6 @@ export class HUD {
 
   updateSpeed(speed: number): void {
     this.speedEl.textContent = `${Math.floor(speed)} km/h`;
-  }
-
-  updateLives(lives: number): void {
-    this.livesEl.textContent = '❤'.repeat(Math.max(0, lives));
   }
 
   updateProgress(progress: number): void {

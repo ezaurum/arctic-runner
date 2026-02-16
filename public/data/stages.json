@@ -33,8 +33,8 @@
         "propeller": { "frequency": 0.005, "startAfter": 1500 }
       },
       "environment": {
-        "fogNear": 100,
-        "fogFar": 400,
+        "fogNear": 150,
+        "fogFar": 600,
         "snowIntensity": 0
       }
     },
@@ -74,8 +74,8 @@
         "propeller": { "frequency": 0.008, "startAfter": 1000 }
       },
       "environment": {
-        "fogNear": 80,
-        "fogFar": 350,
+        "fogNear": 120,
+        "fogFar": 500,
         "snowIntensity": 0.5
       }
     },
@@ -116,8 +116,8 @@
         "propeller": { "frequency": 0.01, "startAfter": 800 }
       },
       "environment": {
-        "fogNear": 50,
-        "fogFar": 250,
+        "fogNear": 80,
+        "fogFar": 400,
         "snowIntensity": 1.0
       }
     }

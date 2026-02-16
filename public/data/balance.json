@@ -6,25 +6,27 @@
     "deceleration": 12,
     "lateralSpeed": 15,
     "jumpForce": 7,
-    "gravity": 35,
-    "lives": 3,
-    "invincibilityDuration": 2.0
+    "gravity": 35
   },
   "obstacles": {
     "iceHole": {
       "speedPenalty": 0.5,
       "stunDuration": 0.8,
-      "canJumpOver": true
+      "canJumpOver": true,
+      "hitBehavior": "slide"
     },
     "crevasse": {
       "speedPenalty": 0.8,
       "stunDuration": 2.0,
-      "timePenalty": 5
+      "timePenalty": 5,
+      "canJumpOver": true,
+      "hitBehavior": "trap"
     },
     "seal": {
       "speedPenalty": 0.6,
       "stunDuration": 1.0,
-      "lateralDrift": 0.5
+      "lateralDrift": 0.5,
+      "hitBehavior": "kill"
     }
   },
   "items": {
