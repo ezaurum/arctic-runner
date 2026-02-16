@@ -43,5 +43,15 @@
   "scoring": {
     "stageBonus": 2000,
     "timeBonusPerSec": 50
+  },
+  "rendering": {
+    "ambientIntensity": 1.9,
+    "dirLightIntensity": 2.8,
+    "roadColor": "#ffffff",
+    "roadRoughness": 0.05,
+    "roadMetalness": 0.3,
+    "groundColor": "#ffffff",
+    "groundRoughness": 0.05,
+    "groundMetalness": 0.3
   }
 }

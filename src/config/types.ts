@@ -41,6 +41,16 @@ export interface BalanceConfig {
     stageBonus: number;
     timeBonusPerSec: number;
   };
+  rendering: {
+    ambientIntensity: number;
+    dirLightIntensity: number;
+    roadColor: string;
+    roadRoughness: number;
+    roadMetalness: number;
+    groundColor: string;
+    groundRoughness: number;
+    groundMetalness: number;
+  };
 }
 
 export interface ObstacleBalance {

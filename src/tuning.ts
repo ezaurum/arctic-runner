@@ -13,6 +13,7 @@ interface BalanceData {
   obstacles: Record<string, Record<string, number | boolean | string>>;
   items: Record<string, Record<string, number>>;
   scoring: Record<string, number>;
+  rendering: Record<string, number | string>;
 }
 
 interface StageData {
@@ -173,6 +174,36 @@ function createDropdown(
   });
 
   field.append(lbl, select);
+  return field;
+}
+
+function createColorInput(
+  label: string,
+  currentValue: string,
+  onChange: (val: string) => void,
+): HTMLDivElement {
+  const field = document.createElement('div');
+  field.className = 'field';
+
+  const lbl = document.createElement('label');
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'name';
+  nameSpan.textContent = label;
+  lbl.appendChild(nameSpan);
+
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.value = currentValue;
+  input.style.width = '60px';
+  input.style.height = '28px';
+  input.style.border = 'none';
+  input.style.cursor = 'pointer';
+  input.addEventListener('input', () => {
+    onChange(input.value);
+    updatePreview();
+  });
+
+  field.append(lbl, input);
   return field;
 }
 
@@ -348,10 +379,72 @@ function buildStagesSection() {
   controlsEl.appendChild(section);
 }
 
+function buildRenderingSection() {
+  const { section, body } = createSection('Rendering', 'sec-rendering');
+  const r = balanceData.rendering;
+
+  body.appendChild(createSlider(
+    { key: 'ambientIntensity', label: '앰비언트 강도', min: 0, max: 5, step: 0.1 },
+    r.ambientIntensity as number,
+    (v) => { r.ambientIntensity = v; },
+  ));
+  body.appendChild(createSlider(
+    { key: 'dirLightIntensity', label: '직사광 강도', min: 0, max: 5, step: 0.1 },
+    r.dirLightIntensity as number,
+    (v) => { r.dirLightIntensity = v; },
+  ));
+  body.appendChild(createColorInput('도로 색상 (roadColor)', r.roadColor as string,
+    (v) => { r.roadColor = v; },
+  ));
+  body.appendChild(createSlider(
+    { key: 'roadRoughness', label: '도로 roughness', min: 0, max: 1, step: 0.01 },
+    r.roadRoughness as number,
+    (v) => { r.roadRoughness = v; },
+  ));
+  body.appendChild(createSlider(
+    { key: 'roadMetalness', label: '도로 metalness', min: 0, max: 1, step: 0.01 },
+    r.roadMetalness as number,
+    (v) => { r.roadMetalness = v; },
+  ));
+  body.appendChild(createColorInput('설원 색상 (groundColor)', r.groundColor as string,
+    (v) => { r.groundColor = v; },
+  ));
+  body.appendChild(createSlider(
+    { key: 'groundRoughness', label: '설원 roughness', min: 0, max: 1, step: 0.01 },
+    r.groundRoughness as number,
+    (v) => { r.groundRoughness = v; },
+  ));
+  body.appendChild(createSlider(
+    { key: 'groundMetalness', label: '설원 metalness', min: 0, max: 1, step: 0.01 },
+    r.groundMetalness as number,
+    (v) => { r.groundMetalness = v; },
+  ));
+
+  controlsEl.appendChild(section);
+}
+
+// ── Persistence ──
+const LS_BALANCE_KEY = 'tuning-balance';
+const LS_STAGES_KEY = 'tuning-stages';
+
+function saveToLocalStorage() {
+  localStorage.setItem(LS_BALANCE_KEY, JSON.stringify(balanceData));
+  localStorage.setItem(LS_STAGES_KEY, JSON.stringify(stagesData));
+}
+
 // ── Preview ──
 function updatePreview() {
   const data = activePreviewTab === 'balance' ? balanceData : stagesData;
   previewEl.value = JSON.stringify(data, null, 2);
+
+  // Persist
+  saveToLocalStorage();
+
+  // Live-push to game iframe
+  gameFrame.contentWindow?.postMessage({
+    type: 'tuning-update',
+    balance: balanceData,
+  }, '*');
 }
 
 // ── Download helper ──
@@ -371,11 +464,18 @@ async function init() {
     fetch('./data/balance.json'),
     fetch('./data/stages.json'),
   ]);
-  balanceData = await balanceRes.json();
-  stagesData = await stagesRes.json();
+  const defaultBalance = await balanceRes.json();
+  const defaultStages = await stagesRes.json();
+
+  // Restore from localStorage if available
+  const savedBalance = localStorage.getItem(LS_BALANCE_KEY);
+  const savedStages = localStorage.getItem(LS_STAGES_KEY);
+  balanceData = savedBalance ? JSON.parse(savedBalance) : defaultBalance;
+  stagesData = savedStages ? JSON.parse(savedStages) : defaultStages;
 
   buildPenguinSection();
   buildCameraSection();
+  buildRenderingSection();
   buildObstaclesSection();
   buildStagesSection();
   updatePreview();
@@ -401,6 +501,12 @@ async function init() {
 
   $('#btn-reload').addEventListener('click', () => {
     gameFrame.src = gameFrame.src;
+  });
+
+  $('#btn-reset').addEventListener('click', () => {
+    localStorage.removeItem(LS_BALANCE_KEY);
+    localStorage.removeItem(LS_STAGES_KEY);
+    location.reload();
   });
 }
 

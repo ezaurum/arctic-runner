@@ -28,7 +28,7 @@ export class SkyManager {
 
   private createGround(): void {
     const groundGeo = new THREE.PlaneGeometry(1200, 1200);
-    const groundMat = new THREE.MeshBasicMaterial({ color: 0xe8eef4 });
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0xfafcff });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.5;

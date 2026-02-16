@@ -103,6 +103,13 @@ export class Game {
         this.pause();
       }
     });
+
+    // Live tuning: receive balance updates from tuning tool
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'tuning-update' && e.data.balance) {
+        this.applyLiveBalance(e.data.balance);
+      }
+    });
   }
 
   async init(): Promise<void> {
@@ -115,6 +122,8 @@ export class Game {
     this.collisionSystem.configure(this.balance);
     this.scoreSystem.configure(this.balance);
     this.stageSystem.configure(this.stages);
+    this.sceneManager.configureRendering(this.balance.rendering);
+    this.roadManager.configureRendering(this.balance.rendering);
 
     // Wire up sound effects
     this.eventBus.on('obstacleHit', () => this.sound.playHit());
@@ -224,6 +233,18 @@ export class Game {
     this.stageSystem.startStage(this.stageSystem.stageIndex, this.penguin.position.z);
   }
 
+  private applyLiveBalance(balance: BalanceConfig): void {
+    this.balance = balance;
+    this.penguin.configure(balance.penguin);
+    this.cameraController.configure(balance.camera);
+    this.collisionSystem.configure(balance);
+    this.scoreSystem.configure(balance);
+    if (balance.rendering) {
+      this.sceneManager.configureRendering(balance.rendering);
+      this.roadManager.configureRendering(balance.rendering);
+    }
+  }
+
   private restartGame(): void {
     this.startGame();
   }
@@ -276,6 +297,7 @@ export class Game {
     this.sceneManager.updateLightPosition(this.penguin.position);
     this.skyManager.update(this.penguin.position.z, dt);
     this.collisionSystem.update();
+    this.obstacleFactory.updateAll(dt, this.penguin.position.z);
     this.collectibleFactory.updateAll(dt);
     this.obstacleFactory.recycleFarBehind(this.penguin.position.z);
     this.collectibleFactory.recycleFarBehind(this.penguin.position.z);

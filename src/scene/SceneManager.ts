@@ -4,12 +4,13 @@ export class SceneManager {
   readonly scene: THREE.Scene;
   readonly camera: THREE.PerspectiveCamera;
   readonly renderer: THREE.WebGLRenderer;
+  private ambientLight: THREE.AmbientLight;
   private dirLight: THREE.DirectionalLight;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
-    this.scene.fog = new THREE.Fog(0xc8dce8, 100, 400);
+    this.scene.fog = new THREE.Fog(0xe8eff4, 100, 400);
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -23,12 +24,13 @@ export class SceneManager {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.insertBefore(this.renderer.domElement, container.firstChild);
 
-    const ambientLight = new THREE.AmbientLight(0x8899bb, 0.8);
-    this.scene.add(ambientLight);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    this.scene.add(this.ambientLight);
 
-    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    this.dirLight = new THREE.DirectionalLight(0xffffff, 1);
     this.dirLight.position.set(10, 20, 10);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.camera.left = -30;
@@ -36,7 +38,9 @@ export class SceneManager {
     this.dirLight.shadow.camera.top = 30;
     this.dirLight.shadow.camera.bottom = -30;
     this.dirLight.shadow.camera.far = 80;
-    this.dirLight.shadow.mapSize.set(1024, 1024);
+    this.dirLight.shadow.mapSize.set(2048, 2048);
+    this.dirLight.shadow.bias = -0.001;
+    this.dirLight.shadow.normalBias = 0.02;
     this.scene.add(this.dirLight);
     this.scene.add(this.dirLight.target);
 
@@ -53,8 +57,13 @@ export class SceneManager {
     this.dirLight.target.position.copy(playerPos);
   }
 
+  configureRendering(config: { ambientIntensity: number; dirLightIntensity: number }): void {
+    this.ambientLight.intensity = config.ambientIntensity;
+    this.dirLight.intensity = config.dirLightIntensity;
+  }
+
   setFog(near: number, far: number): void {
-    this.scene.fog = new THREE.Fog(0xc8dce8, near, far);
+    this.scene.fog = new THREE.Fog(0xe8eff4, near, far);
   }
 
   private onResize(): void {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ROAD_WIDTH, ROAD_SEGMENT_LENGTH, ROAD_SEGMENT_COUNT } from '../config/constants';
-import { StageConfig } from '../config/types';
+import { StageConfig, BalanceConfig } from '../config/types';
 import { interpolateKeyframes } from '../utils/math';
 import { EventBus } from '../core/EventBus';
 
@@ -22,8 +22,8 @@ const PROP_GEOS = {
   pole: new THREE.CylinderGeometry(0.05, 0.05, 1.8, 4),
 };
 const PROP_MATS = {
-  ice: new THREE.MeshStandardMaterial({ color: 0xc0dde8, roughness: 0.4 }),
-  rock: new THREE.MeshStandardMaterial({ color: 0x8899aa, roughness: 0.7 }),
+  ice: new THREE.MeshStandardMaterial({ color: 0xeef4fa, roughness: 0.2 }),
+  rock: new THREE.MeshStandardMaterial({ color: 0xdde4ea, roughness: 0.4 }),
   pole: new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.5 }),
 };
 
@@ -35,6 +35,8 @@ export class RoadManager {
   private elevationKeyframes: { at: number; value: number }[] = [];
   private scene: THREE.Scene;
   private eventBus: EventBus;
+  private roadMats: THREE.MeshStandardMaterial[] = [];
+  private groundMats: THREE.MeshStandardMaterial[] = [];
 
   constructor(scene: THREE.Scene, eventBus: EventBus) {
     this.scene = scene;
@@ -44,30 +46,35 @@ export class RoadManager {
       // Each segment gets its own geometry so we can warp vertices per-segment
       const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_SEGMENT_LENGTH, 1, 1);
       const roadMat = new THREE.MeshStandardMaterial({
-        color: 0x99bbcc,
-        roughness: 0.3,
-        metalness: 0.1,
+        color: 0xffffff,
+        roughness: 0.5,
+        metalness: 0,
       });
       const road = new THREE.Mesh(roadGeo, roadMat);
       road.rotation.x = -Math.PI / 2;
       road.receiveShadow = true;
       this.scene.add(road);
+      this.roadMats.push(roadMat);
 
       const groundLeftGeo = new THREE.PlaneGeometry(GROUND_SIDE_WIDTH, ROAD_SEGMENT_LENGTH, 1, 1);
       const groundMat = new THREE.MeshStandardMaterial({
-        color: 0xeef4f8,
-        roughness: 0.8,
+        color: 0xffffff,
+        roughness: 0.5,
+        metalness: 0,
       });
       const groundLeft = new THREE.Mesh(groundLeftGeo, groundMat);
       groundLeft.rotation.x = -Math.PI / 2;
       groundLeft.receiveShadow = true;
       this.scene.add(groundLeft);
+      this.groundMats.push(groundMat);
 
+      const groundRightMat = groundMat.clone();
       const groundRightGeo = new THREE.PlaneGeometry(GROUND_SIDE_WIDTH, ROAD_SEGMENT_LENGTH, 1, 1);
-      const groundRight = new THREE.Mesh(groundRightGeo, groundMat.clone());
+      const groundRight = new THREE.Mesh(groundRightGeo, groundRightMat);
       groundRight.rotation.x = -Math.PI / 2;
       groundRight.receiveShadow = true;
       this.scene.add(groundRight);
+      this.groundMats.push(groundRightMat);
 
       // Roadside props (2-4 per segment)
       const props: THREE.Mesh[] = [];
@@ -93,6 +100,21 @@ export class RoadManager {
       }
 
       this.segments.push({ road, groundLeft, groundRight, props, backZ: 0 });
+    }
+  }
+
+  configureRendering(config: BalanceConfig['rendering']): void {
+    const roadColor = new THREE.Color(config.roadColor);
+    const groundColor = new THREE.Color(config.groundColor);
+    for (const mat of this.roadMats) {
+      mat.color.copy(roadColor);
+      mat.roughness = config.roadRoughness;
+      mat.metalness = config.roadMetalness;
+    }
+    for (const mat of this.groundMats) {
+      mat.color.copy(groundColor);
+      mat.roughness = config.groundRoughness;
+      mat.metalness = config.groundMetalness;
     }
   }
 

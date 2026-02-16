@@ -46,6 +46,12 @@ export class ObstacleFactory {
     if (pool) pool.release(obs);
   }
 
+  updateAll(dt: number, playerZ: number): void {
+    for (const obs of this.activeObstacles) {
+      if (obs.active) obs.update(dt, playerZ);
+    }
+  }
+
   recycleFarBehind(playerZ: number): void {
     for (let i = this.activeObstacles.length - 1; i >= 0; i--) {
       const obs = this.activeObstacles[i];

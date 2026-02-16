@@ -43,6 +43,7 @@ export class CollisionSystem {
       const obsBalance = this.balance.obstacles[obs.type];
       if (obsBalance?.canJumpOver && this.penguin.isJumping) continue;
       if (this.penguin.isFlying) continue;
+      if (this.penguin.currentState === 'trapped') continue;
 
       const op = obs.mesh.position;
       if (
@@ -66,7 +67,9 @@ export class CollisionSystem {
           }
           this.eventBus.emit('obstacleHit', obs.type, obsBalance);
         }
-        this.obstacleFactory.recycle(obs);
+        if (obsBalance?.hitBehavior !== 'trap') {
+          this.obstacleFactory.recycle(obs);
+        }
       }
     }
 
